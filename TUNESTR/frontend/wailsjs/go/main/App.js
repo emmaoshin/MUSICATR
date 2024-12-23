@@ -14,6 +14,10 @@ export function GetState() {
   return window['go']['main']['App']['GetState']();
 }
 
+export function GetTheme() {
+  return window['go']['main']['App']['GetTheme']();
+}
+
 export function ReadFile(arg1) {
   return window['go']['main']['App']['ReadFile'](arg1);
 }
@@ -26,10 +30,22 @@ export function RemoveFile(arg1) {
   return window['go']['main']['App']['RemoveFile'](arg1);
 }
 
+export function RenameFile(arg1, arg2) {
+  return window['go']['main']['App']['RenameFile'](arg1, arg2);
+}
+
 export function SelectDirectory() {
   return window['go']['main']['App']['SelectDirectory']();
 }
 
 export function SelectFile() {
   return window['go']['main']['App']['SelectFile']();
+}
+
+export function SetLastImage(arg1) {
+  return window['go']['main']['App']['SetLastImage'](arg1);
+}
+
+export function SetTheme(arg1) {
+  return window['go']['main']['App']['SetTheme'](arg1);
 }

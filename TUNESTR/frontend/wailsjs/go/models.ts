@@ -1,5 +1,17 @@
 export namespace main {
 	
+	export class UserPreferences {
+	    theme: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new UserPreferences(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.theme = source["theme"];
+	    }
+	}
 	export class LastImage {
 	    path: string;
 	    timestamp: number;
@@ -37,6 +49,7 @@ export namespace main {
 	export class AppState {
 	    selectedFiles: FileInfo[];
 	    lastImage?: LastImage;
+	    preferences: UserPreferences;
 	
 	    static createFrom(source: any = {}) {
 	        return new AppState(source);
@@ -46,6 +59,7 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.selectedFiles = this.convertValues(source["selectedFiles"], FileInfo);
 	        this.lastImage = this.convertValues(source["lastImage"], LastImage);
+	        this.preferences = this.convertValues(source["preferences"], UserPreferences);
 	    }
 	
 		convertValues(a: any, classs: any, asMap: boolean = false): any {
@@ -66,6 +80,7 @@ export namespace main {
 		    return a;
 		}
 	}
+	
 	
 
 }

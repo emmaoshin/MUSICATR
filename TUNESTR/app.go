@@ -27,9 +27,14 @@ type FileInfo struct {
 	ModTime string    `json:"modTime"`
 }
 
+type UserPreferences struct {
+	Theme string `json:"theme"` // "light" or "dark"
+}
+
 type AppState struct {
-	SelectedFiles []FileInfo   `json:"selectedFiles"`
-	LastImage    *LastImage   `json:"lastImage"`
+	SelectedFiles []FileInfo       `json:"selectedFiles"`
+	LastImage    *LastImage       `json:"lastImage"`
+	Preferences  UserPreferences  `json:"preferences"`
 }
 
 type LastImage struct {
@@ -72,11 +77,14 @@ func (a *App) Startup(ctx context.Context) {
 func (a *App) loadState() (*AppState, error) {
 	statePath := filepath.Join(a.dataPath, "state.json")
 	
-	// If the file doesn't exist, return empty state
+	// If the file doesn't exist, return empty state with default preferences
 	if _, err := os.Stat(statePath); os.IsNotExist(err) {
 		return &AppState{
 			SelectedFiles: []FileInfo{},
 			LastImage:    nil,
+			Preferences: UserPreferences{
+				Theme: "light", // default theme
+			},
 		}, nil
 	}
 
@@ -274,4 +282,119 @@ func (a *App) ReadFile(path string) (string, error) {
 	dataURL := fmt.Sprintf("data:%s;base64,%s", mimeType, base64Data)
 
 	return dataURL, nil
+}
+
+func (a *App) RenameFile(path string, newName string) error {
+	state, err := a.loadState()
+	if err != nil {
+		return err
+	}
+
+	// Get the directory and new full path
+	dir := filepath.Dir(path)
+	ext := filepath.Ext(path)
+	if filepath.Ext(newName) == "" {
+		newName = newName + ext
+	}
+	newPath := filepath.Join(dir, newName)
+
+	// Rename the actual file
+	if err := os.Rename(path, newPath); err != nil {
+		return fmt.Errorf("failed to rename file: %v", err)
+	}
+
+	// Update the file in selected files
+	for i, file := range state.SelectedFiles {
+		if file.Path == path {
+			state.SelectedFiles[i].Path = newPath
+			state.SelectedFiles[i].Name = newName
+			break
+		}
+	}
+
+	// Update last image if it matches
+	if state.LastImage != nil {
+		// We need to update the data URL for the last image
+		if strings.HasPrefix(state.LastImage.Path, "data:") {
+			// It's already a data URL, we need to check the original path
+			for _, file := range state.SelectedFiles {
+				if file.Path == newPath {
+					// This is our renamed file, update the data URL
+					dataURL, err := a.ReadFile(newPath)
+					if err != nil {
+						return err
+					}
+					state.LastImage.Path = dataURL
+					break
+				}
+			}
+		}
+	}
+
+	return a.saveState(state)
+}
+
+func (a *App) SetLastImage(path string) error {
+	state, err := a.loadState()
+	if err != nil {
+		return err
+	}
+
+	if path == "" {
+		// Clear the last image
+		state.LastImage = nil
+	} else {
+		// Find the file in selected files
+		var selectedFile *FileInfo
+		for _, file := range state.SelectedFiles {
+			if file.Path == path {
+				selectedFile = &file
+				break
+			}
+		}
+
+		if selectedFile == nil {
+			return fmt.Errorf("file not found in selected files")
+		}
+
+		if !isImageFile(selectedFile.Ext) {
+			return fmt.Errorf("file is not an image")
+		}
+
+		// Convert to data URL
+		dataURL, err := a.ReadFile(path)
+		if err != nil {
+			return err
+		}
+
+		// Update last image
+		state.LastImage = &LastImage{
+			Path:      dataURL,
+			Timestamp: time.Now().UnixMilli(),
+		}
+	}
+
+	return a.saveState(state)
+}
+
+func (a *App) SetTheme(theme string) error {
+	state, err := a.loadState()
+	if err != nil {
+		return err
+	}
+
+	state.Preferences.Theme = theme
+	return a.saveState(state)
+}
+
+func (a *App) GetTheme() (string, error) {
+	state, err := a.loadState()
+	if err != nil {
+		return "", err
+	}
+
+	if state.Preferences.Theme == "" {
+		return "light", nil // default theme
+	}
+	return state.Preferences.Theme, nil
 }

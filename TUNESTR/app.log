@@ -135,3 +135,28 @@
 2024/12/23 08:12:36 Attempting to open file dialog
 2024/12/23 08:12:38 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-21 024426.png
 2024/12/23 08:12:38 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-21 024426.png Name:Screenshot 2024-12-21 024426.png Ext:.png Size:26768 ModTime:2024-12-21T02:44:26-05:00}
+2024/12/23 08:17:16 Application started
+2024/12/23 08:17:19 Attempting to open file dialog
+2024/12/23 08:17:21 Getting file info for: 
+2024/12/23 08:17:21 Error getting file info: Stat : The system cannot find the path specified.
+2024/12/23 08:17:24 Attempting to open file dialog
+2024/12/23 08:17:26 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 055527.png
+2024/12/23 08:17:26 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 055527.png Name:Screenshot 2024-12-23 055527.png Ext:.png Size:17974 ModTime:2024-12-23T05:55:27-05:00}
+2024/12/23 08:18:08 Attempting to open file dialog
+2024/12/23 08:18:11 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 060016.png
+2024/12/23 08:18:11 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 060016.png Name:Screenshot 2024-12-23 060016.png Ext:.png Size:18461 ModTime:2024-12-23T06:00:16-05:00}
+2024/12/23 08:18:38 Attempting to open file dialog
+2024/12/23 08:18:40 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 080619.png
+2024/12/23 08:18:40 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 080619.png Name:Screenshot 2024-12-23 080619.png Ext:.png Size:38752 ModTime:2024-12-23T08:06:19-05:00}
+2024/12/23 08:19:21 Application started
+2024/12/23 08:21:21 Application started
+2024/12/23 08:21:32 Application started
+2024/12/23 08:32:11 Application started
+2024/12/23 08:32:46 Application started
+2024/12/23 08:33:02 Attempting to open file dialog
+2024/12/23 08:33:06 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 082448.png
+2024/12/23 08:33:06 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Screenshot 2024-12-23 082448.png Name:Screenshot 2024-12-23 082448.png Ext:.png Size:6193 ModTime:2024-12-23T08:24:48-05:00}
+2024/12/23 08:33:56 Error reading file: open C:\Users\emman\OneDrive\Pictures\Screenshots\Can I change.png: The system cannot find the file specified.
+2024/12/23 08:34:02 Attempting to open file dialog
+2024/12/23 08:34:05 Getting file info for: C:\Users\emman\OneDrive\Pictures\Screenshots\Yes I can.png
+2024/12/23 08:34:05 File info: &{Path:C:\Users\emman\OneDrive\Pictures\Screenshots\Yes I can.png Name:Yes I can.png Ext:.png Size:6193 ModTime:2024-12-23T08:24:48-05:00}

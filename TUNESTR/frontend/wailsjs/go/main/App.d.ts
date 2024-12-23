@@ -8,12 +8,20 @@ export function GetFileInfo(arg1:string):Promise<main.FileInfo>;
 
 export function GetState():Promise<main.AppState>;
 
+export function GetTheme():Promise<string>;
+
 export function ReadFile(arg1:string):Promise<string>;
 
 export function ReadImageFile(arg1:string):Promise<Array<number>>;
 
 export function RemoveFile(arg1:string):Promise<void>;
 
+export function RenameFile(arg1:string,arg2:string):Promise<void>;
+
 export function SelectDirectory():Promise<string>;
 
 export function SelectFile():Promise<main.FileInfo>;
+
+export function SetLastImage(arg1:string):Promise<void>;
+
+export function SetTheme(arg1:string):Promise<void>;

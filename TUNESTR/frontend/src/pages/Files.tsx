@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { FileInfo, LastImageState } from '@/types';
 import SelectedItems from '@/components/SelectedItems';
-import LastImage from '@/components/LastImage';
-import { SelectFile, GetState, RemoveFile, ClearState } from '../../wailsjs/go/main/App';
+import ChosenFile from '@/components/LastImage';
+import { SelectFile, GetState, RemoveFile, ClearState, RenameFile, SetLastImage } from '../../wailsjs/go/main/App';
 
 const Files: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileInfo[]>([]);
   const [lastImage, setLastImage] = useState<LastImageState | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Load state from backend on component mount
   useEffect(() => {
     loadState();
   }, []);
@@ -29,12 +28,28 @@ const Files: React.FC = () => {
     }
   };
 
+  const getChosenFileName = (): string | undefined => {
+    if (!lastImage?.path) return undefined;
+    const imagePath = lastImage.path;
+    
+    // Find the file in selectedFiles that matches the chosen file
+    const chosenFile = selectedFiles.find(file => {
+      // Since lastImage.path is a data URL, we need to find the file that was used to create it
+      // We can check if the data URL contains any part of the file path
+      const pathParts = file.path.split(/[\\/]/); // Split on both forward and backward slashes
+      return pathParts.some(part => 
+        // Check if any part of the path matches
+        part && part.length > 3 && imagePath.includes(part)
+      );
+    });
+    
+    return chosenFile?.name;
+  };
+
   const handleFileSelect = async () => {
     try {
       const fileInfo = await SelectFile();
       if (fileInfo) {
-        // State is automatically updated in the backend
-        // Just reload the state
         await loadState();
       }
     } catch (error) {
@@ -57,6 +72,33 @@ const Files: React.FC = () => {
       await loadState();
     } catch (error) {
       console.error('Error clearing state:', error);
+    }
+  };
+
+  const handleSetLastImage = async (file: FileInfo) => {
+    try {
+      await SetLastImage(file.path);
+      await loadState();
+    } catch (error) {
+      console.error('Error setting last image:', error);
+    }
+  };
+
+  const handleClearLastImage = async () => {
+    try {
+      await SetLastImage("");
+      await loadState();
+    } catch (error) {
+      console.error('Error clearing last image:', error);
+    }
+  };
+
+  const handleRenameFile = async (path: string, newName: string) => {
+    try {
+      await RenameFile(path, newName);
+      await loadState();
+    } catch (error) {
+      console.error('Error renaming file:', error);
     }
   };
 
@@ -91,8 +133,18 @@ const Files: React.FC = () => {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2">
-        <SelectedItems files={selectedFiles} onRemove={handleRemoveFile} />
-        <LastImage lastImage={lastImage} />
+        <SelectedItems 
+          files={selectedFiles} 
+          onRemove={handleRemoveFile}
+          onSetAsLastImage={handleSetLastImage}
+          currentLastImagePath={lastImage?.path}
+          onRename={handleRenameFile}
+        />
+        <ChosenFile 
+          lastImage={lastImage} 
+          onClear={handleClearLastImage}
+          fileName={getChosenFileName()}
+        />
       </div>
     </div>
   );

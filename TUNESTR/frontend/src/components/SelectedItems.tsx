@@ -1,30 +1,40 @@
-import React from 'react';
-import { FileInfo } from '../types';
+import React, { useEffect, useState } from 'react';
+import { FileInfo } from '@/types';
 
 interface SelectedItemsProps {
-  selectedFiles: FileInfo[];
+  files: FileInfo[];
+  onRemove: (path: string) => void;
 }
 
-const SelectedItems: React.FC<SelectedItemsProps> = ({ selectedFiles }) => {
-  const formatPath = (path: string) => {
-    if (path.startsWith('data:')) {
-      return path.substring(0, 20) + '...'; // Show only first 20 chars of data URL
-    }
-    return path;
-  };
-
+const SelectedItems: React.FC<SelectedItemsProps> = ({ files, onRemove }) => {
   return (
-    <div className="border rounded p-4">
-      <h2 className="text-xl mb-3">Selected Items</h2>
-      {selectedFiles.length === 0 ? (
-        <p className="text-gray-500">No items selected</p>
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Selected Files</h2>
+      {files.length === 0 ? (
+        <p className="text-muted-foreground">No files selected</p>
       ) : (
-        selectedFiles.map((file, index) => (
-          <div key={index} className="p-2 mb-2 bg-gray-100 rounded">
-            <p className="font-medium">{file.name || "can't get name" }</p>
-            <p className="text-sm text-gray-600">{formatPath(file.path)}</p>
-          </div>
-        ))
+        <ul className="space-y-2">
+          {files.map((file) => (
+            <li 
+              key={file.path}
+              className="flex items-center justify-between p-3 bg-card rounded-lg border"
+            >
+              <div>
+                <p className="font-medium">{file.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(file.size / 1024 / 1024).toFixed(2)} MB • Last modified: {new Date(file.modTime).toLocaleDateString()}
+                </p>
+              </div>
+              <button
+                onClick={() => onRemove(file.path)}
+                className="p-2 hover:bg-destructive/10 hover:text-destructive rounded-md transition-colors"
+                title="Remove file"
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

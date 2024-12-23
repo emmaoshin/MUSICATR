@@ -1,40 +1,47 @@
 import React from 'react';
+import { LastImageState } from '@/types';
 
 interface LastImageProps {
-  lastImage: string | null;
+  lastImage: LastImageState | null;
 }
 
 const LastImage: React.FC<LastImageProps> = ({ lastImage }) => {
-  const getImageUrl = (dataUrl: string) => {
-    const parts = dataUrl.split('###');
-    return parts[0]; // Return just the data URL part
+  const formatTimestamp = (timestamp: number) => {
+    const date = new Date(timestamp);
+    return date.toLocaleString(undefined, {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   };
 
-  if (!lastImage) {
+  if (!lastImage?.path) {
     return (
-      <div className="border rounded p-4">
-        <h2 className="text-xl mb-3">Last Selected Image</h2>
-        <p className="text-gray-500">No image selected</p>
+      <div className="space-y-4">
+        <h2 className="text-lg font-semibold">Last Image</h2>
+        <p className="text-muted-foreground">No image selected</p>
       </div>
     );
   }
 
   return (
-    <div className="border rounded p-4">
-      <h2 className="text-xl mb-3">Last Selected Image</h2>
-      <div className="relative aspect-video">
-        <img
-          src={getImageUrl(lastImage)}
-          alt="Selected image"
-          className="w-full h-full object-contain"
-          onError={(e) => {
-            console.error('Error loading image:', lastImage.substring(0, 100) + '...');
-            e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling?.classList.remove('hidden');
-          }}
-        />
-        <div className="hidden text-gray-500 text-center p-4">
-          Unable to load image
+    <div className="space-y-4">
+      <h2 className="text-lg font-semibold">Last Image</h2>
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <div className="relative aspect-video">
+          <img
+            src={lastImage.path}
+            alt="Last selected image"
+            className="absolute inset-0 w-full h-full object-contain"
+          />
+        </div>
+        <div className="p-3 border-t">
+          <p className="text-sm text-muted-foreground">
+            Selected: {formatTimestamp(lastImage.timestamp)}
+          </p>
         </div>
       </div>
     </div>

@@ -1,69 +1,97 @@
-import React, { useState } from 'react';
-import { SelectFile, SelectDirectory, GetFileInfo } from '../../wailsjs/go/main/App';
-import { FileInfo } from '../types';
-import SelectedItems from '../components/SelectedItems';
-import LastImage from '../components/LastImage';
+import React, { useEffect, useState } from 'react';
+import { FileInfo, LastImageState } from '@/types';
+import SelectedItems from '@/components/SelectedItems';
+import LastImage from '@/components/LastImage';
+import { SelectFile, GetState, RemoveFile, ClearState } from '../../wailsjs/go/main/App';
 
 const Files: React.FC = () => {
   const [selectedFiles, setSelectedFiles] = useState<FileInfo[]>([]);
-  const [lastImage, setLastImage] = useState<string | null>(null);
+  const [lastImage, setLastImage] = useState<LastImageState | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Load state from backend on component mount
+  useEffect(() => {
+    loadState();
+  }, []);
+
+  const loadState = async () => {
+    try {
+      setLoading(true);
+      const state = await GetState();
+      if (state) {
+        setSelectedFiles(state.selectedFiles || []);
+        setLastImage(state.lastImage || null);
+      }
+    } catch (error) {
+      console.error('Error loading state:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFileSelect = async () => {
     try {
-      const dataUrl = await SelectFile();
-      if (dataUrl) {
-        const result = await GetFileInfo(dataUrl);
-        const fileInfo: FileInfo = {
-          name: result.name as string || 'Selected Image',
-          path: result.path as string || dataUrl,
-          ext: result.ext as string || '.jpg'
-        };
-        setSelectedFiles(prev => [...prev, fileInfo]);
-        setLastImage(dataUrl);
+      const fileInfo = await SelectFile();
+      if (fileInfo) {
+        // State is automatically updated in the backend
+        // Just reload the state
+        await loadState();
       }
     } catch (error) {
       console.error('Error selecting file:', error);
     }
   };
 
-  const handleDirectorySelect = async () => {
+  const handleRemoveFile = async (path: string) => {
     try {
-      const dirPath = await SelectDirectory();
-      if (dirPath) {
-        const result = await GetFileInfo(dirPath);
-        const dirInfo: FileInfo = {
-          name: result.name as string,
-          path: result.path as string,
-          ext: result.ext as string
-        };
-        setSelectedFiles(prev => [...prev, dirInfo]);
-      }
+      await RemoveFile(path);
+      await loadState();
     } catch (error) {
-      console.error('Error selecting directory:', error);
+      console.error('Error removing file:', error);
     }
   };
 
-  return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold text-center mb-8">File Explorer</h1>
+  const handleClearAll = async () => {
+    try {
+      await ClearState();
+      await loadState();
+    } catch (error) {
+      console.error('Error clearing state:', error);
+    }
+  };
 
-      <div className="flex justify-center gap-4 mb-8">
-        <button
-          onClick={handleFileSelect}
-          className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-        >
-          Select File
-        </button>
-        <button
-          onClick={handleDirectorySelect}
-          className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-        >
-          Select Folder
-        </button>
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[50vh]">
+        <div className="text-lg text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Files</h1>
+        <div className="space-x-4">
+          <button
+            onClick={handleFileSelect}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+          >
+            Select File
+          </button>
+          {selectedFiles.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+            >
+              Clear All
+            </button>
+          )}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <SelectedItems selectedFiles={selectedFiles} />
+      <div className="grid gap-8 md:grid-cols-2">
+        <SelectedItems files={selectedFiles} onRemove={handleRemoveFile} />
         <LastImage lastImage={lastImage} />
       </div>
     </div>

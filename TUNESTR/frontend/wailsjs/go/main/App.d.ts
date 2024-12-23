@@ -3,6 +3,8 @@
 
 export function GetFileInfo(arg1:string):Promise<{[key: string]: any}>;
 
+export function ReadImageFile(arg1:string):Promise<Array<number>>;
+
 export function SelectDirectory():Promise<string>;
 
 export function SelectFile():Promise<string>;

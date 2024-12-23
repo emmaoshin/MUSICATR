@@ -10,14 +10,16 @@ import Settings from './pages/Settings';
 const App: React.FC = () => {
   return (
     <Router>
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-background text-foreground">
         <Navbar />
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/files" element={<Files />} />
-          <Route path="/player" element={<Player />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
+        <main className="container mx-auto px-4 py-6">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/files" element={<Files />} />
+            <Route path="/player" element={<Player />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </main>
       </div>
     </Router>
   );

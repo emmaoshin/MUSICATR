@@ -38,8 +38,11 @@ type AppState struct {
 }
 
 type LastImage struct {
-	Path      string `json:"path"`
-	Timestamp int64  `json:"timestamp"`
+	Path      string  `json:"path"`
+	Timestamp int64   `json:"timestamp"`
+	Name      string  `json:"name"`
+	Ext       string  `json:"ext"`
+	Size      int64   `json:"size"`
 }
 
 func NewApp() *App {
@@ -137,6 +140,7 @@ func (a *App) SelectFile() (*FileInfo, error) {
 	// Get file info
 	fileInfo, err := a.GetFileInfo(file)
 	if err != nil {
+		a.logger.Printf("Error getting file info: %v\n", err)
 		return nil, err
 	}
 
@@ -156,14 +160,21 @@ func (a *App) SelectFile() (*FileInfo, error) {
 			return nil, err
 		}
 
+		// Update last image with full file information
 		state.LastImage = &LastImage{
 			Path:      dataURL,
-			Timestamp: time.Now().UnixMilli(), // Use milliseconds for more precise timestamp
+				Timestamp: time.Now().UnixMilli(),
+				Name:      fileInfo.Name,
+				Ext:       fileInfo.Ext,
+				Size:      fileInfo.Size,
 		}
+
+		a.logger.Printf("Set last image: %+v\n", state.LastImage)
 	}
 
 	// Save updated state
 	if err := a.saveState(state); err != nil {
+		a.logger.Printf("Error saving state: %v\n", err)
 		return nil, err
 	}
 
@@ -179,12 +190,17 @@ func (a *App) GetFileInfo(path string) (*FileInfo, error) {
 		return nil, err
 	}
 
+	name := filepath.Base(path)
+	ext := filepath.Ext(path)
+	size := stat.Size()
+	modTime := stat.ModTime().Format(time.RFC3339)
+
 	fileInfo := &FileInfo{
 		Path:    path,
-		Name:    filepath.Base(path),
-		Ext:     filepath.Ext(path),
-		Size:    stat.Size(),
-		ModTime: stat.ModTime().Format(time.RFC3339),
+		Name:    name,
+		Ext:     ext,
+		Size:    size,
+		ModTime: modTime,
 	}
 
 	a.logger.Printf("File info: %+v\n", fileInfo)
@@ -207,18 +223,38 @@ func (a *App) RemoveFile(path string) error {
 	state.SelectedFiles = updatedFiles
 
 	// Clear last image if it matches the removed file
-	if state.LastImage != nil && state.LastImage.Path == path {
-		state.LastImage = nil
+	// We need to check both the data URL and original path
+	if state.LastImage != nil {
+		// Check if the removed file was the last image
+		isLastImage := false
+		for _, file := range state.SelectedFiles {
+			if file.Path == path {
+				isLastImage = true
+				break
+			}
+		}
+		
+		if isLastImage {
+			a.logger.Printf("Clearing last image as file was removed: %s", path)
+			state.LastImage = nil
+		}
 	}
 
 	return a.saveState(state)
 }
 
 func (a *App) ClearState() error {
+	// Create a fresh state with default preferences
 	state := &AppState{
 		SelectedFiles: []FileInfo{},
 		LastImage:    nil,
+		Preferences:  UserPreferences{
+			Theme: "light", // Preserve current theme if needed
+		},
 	}
+
+	// Log the state reset
+	a.logger.Println("Clearing application state")
 	return a.saveState(state)
 }
 
@@ -367,14 +403,29 @@ func (a *App) SetLastImage(path string) error {
 			return err
 		}
 
-		// Update last image
+		// Log the file information for debugging
+		a.logger.Printf("Setting last image with name: %s, ext: %s, size: %d", selectedFile.Name, selectedFile.Ext, selectedFile.Size)
+
+		// Update last image with full file information
 		state.LastImage = &LastImage{
 			Path:      dataURL,
-			Timestamp: time.Now().UnixMilli(),
+				Timestamp: time.Now().UnixMilli(),
+				Name:      selectedFile.Name,  // Make sure this is set
+				Ext:       selectedFile.Ext,   // Make sure this is set
+				Size:      selectedFile.Size,  // Make sure this is set
 		}
+
+		// Log the created LastImage for debugging
+		a.logger.Printf("Created LastImage: %+v", state.LastImage)
 	}
 
-	return a.saveState(state)
+	// Save the state
+	if err := a.saveState(state); err != nil {
+		a.logger.Printf("Error saving state: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (a *App) SetTheme(theme string) error {

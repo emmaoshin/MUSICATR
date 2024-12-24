@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FileInfo, LastImageState } from '@/types';
 import SelectedItems from '@/components/SelectedItems';
-import ChosenFile from '@/components/LastImage';
+import ChosenFile from '../components/LastImage';
 import { SelectFile, GetState, RemoveFile, ClearState, RenameFile, SetLastImage } from '../../wailsjs/go/main/App';
 
 const Files: React.FC = () => {
@@ -143,7 +143,6 @@ const Files: React.FC = () => {
         <ChosenFile 
           lastImage={lastImage} 
           onClear={handleClearLastImage}
-          fileName={getChosenFileName()}
         />
       </div>
     </div>

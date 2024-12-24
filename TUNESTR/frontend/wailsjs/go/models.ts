@@ -15,6 +15,9 @@ export namespace main {
 	export class LastImage {
 	    path: string;
 	    timestamp: number;
+	    name: string;
+	    ext: string;
+	    size: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new LastImage(source);
@@ -24,6 +27,9 @@ export namespace main {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.path = source["path"];
 	        this.timestamp = source["timestamp"];
+	        this.name = source["name"];
+	        this.ext = source["ext"];
+	        this.size = source["size"];
 	    }
 	}
 	export class FileInfo {

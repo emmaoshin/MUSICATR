@@ -9,4 +9,7 @@ export interface FileInfo {
 export interface LastImageState {
   path: string | null;
   timestamp: number;
+  name: string | null;
+  ext: string | null;
+  size: number | null;
 } 

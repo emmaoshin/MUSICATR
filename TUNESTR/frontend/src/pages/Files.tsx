@@ -1,13 +1,30 @@
-import React, { useEffect, useState } from 'react';
-import { FileInfo, LastImageState } from '@/types';
-import SelectedItems from '@/components/SelectedItems';
-import ChosenFile from '../components/LastImage';
-import { SelectFile, GetState, RemoveFile, ClearState, RenameFile, SetLastImage } from '../../wailsjs/go/main/App';
+import { useEffect, useState } from 'react';
+import { SelectFile, GetState, SetLastImage, RemoveFile, RenameFile } from '../../wailsjs/go/main/App';
+import { LastImageState } from '@/types';
+import ChosenFile from '@/components/LastImage';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Heart, Share2, Edit2, Plus, Check } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
-const Files: React.FC = () => {
-  const [selectedFiles, setSelectedFiles] = useState<FileInfo[]>([]);
+interface ImageFile {
+  path: string;
+  name: string;
+  ext: string;
+  size: number;
+  modTime: string;
+  favorite?: boolean;
+}
+
+export default function Files() {
+  const [selectedFiles, setSelectedFiles] = useState<ImageFile[]>([]);
   const [lastImage, setLastImage] = useState<LastImageState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<ImageFile[]>([]);
+  const [localFavorites, setLocalFavorites] = useState<Set<string>>(new Set());
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [editingFile, setEditingFile] = useState<ImageFile | null>(null);
+  const [newFileName, setNewFileName] = useState('');
 
   useEffect(() => {
     loadState();
@@ -15,45 +32,37 @@ const Files: React.FC = () => {
 
   const loadState = async () => {
     try {
-      setLoading(true);
       const state = await GetState();
-      if (state) {
-        setSelectedFiles(state.selectedFiles || []);
-        setLastImage(state.lastImage || null);
-      }
+      setSelectedFiles(state.selectedFiles || []);
+      setLastImage(state.lastImage || null);
+      const favSet = new Set(state.selectedFiles?.filter(f => f.favorite).map(f => f.path));
+      setLocalFavorites(favSet);
+      setFavorites(state.selectedFiles?.filter(file => file.favorite) || []);
     } catch (error) {
       console.error('Error loading state:', error);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  const getChosenFileName = (): string | undefined => {
-    if (!lastImage?.path) return undefined;
-    const imagePath = lastImage.path;
-    
-    // Find the file in selectedFiles that matches the chosen file
-    const chosenFile = selectedFiles.find(file => {
-      // Since lastImage.path is a data URL, we need to find the file that was used to create it
-      // We can check if the data URL contains any part of the file path
-      const pathParts = file.path.split(/[\\/]/); // Split on both forward and backward slashes
-      return pathParts.some(part => 
-        // Check if any part of the path matches
-        part && part.length > 3 && imagePath.includes(part)
-      );
-    });
-    
-    return chosenFile?.name;
   };
 
   const handleFileSelect = async () => {
     try {
-      const fileInfo = await SelectFile();
-      if (fileInfo) {
+      const file = await SelectFile();
+      if (file) {
         await loadState();
       }
     } catch (error) {
       console.error('Error selecting file:', error);
+    }
+  };
+
+  const handleSetLastImage = async (path: string) => {
+    try {
+      await SetLastImage(path);
+      const state = await GetState();
+      if (state.lastImage) {
+        setLastImage(state.lastImage);
+      }
+    } catch (error) {
+      console.error('Error setting last image:', error);
     }
   };
 
@@ -66,87 +75,176 @@ const Files: React.FC = () => {
     }
   };
 
-  const handleClearAll = async () => {
-    try {
-      await ClearState();
-      await loadState();
-    } catch (error) {
-      console.error('Error clearing state:', error);
-    }
-  };
-
-  const handleSetLastImage = async (file: FileInfo) => {
-    try {
-      await SetLastImage(file.path);
-      await loadState();
-    } catch (error) {
-      console.error('Error setting last image:', error);
-    }
-  };
-
   const handleClearLastImage = async () => {
     try {
-      await SetLastImage("");
+      await SetLastImage('');
       await loadState();
     } catch (error) {
       console.error('Error clearing last image:', error);
     }
   };
 
-  const handleRenameFile = async (path: string, newName: string) => {
+  const toggleFavorite = (file: ImageFile) => {
+    setLocalFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(file.path)) {
+        newFavorites.delete(file.path);
+      } else {
+        newFavorites.add(file.path);
+      }
+      return newFavorites;
+    });
+  };
+
+  const handleRename = async () => {
     try {
-      await RenameFile(path, newName);
-      await loadState();
+      if (!editingFile) return;
+
+      await RenameFile(editingFile.path, newFileName);
+      
+      // If this was the last image, refresh it
+      if (lastImage && lastImage.name === editingFile.name) {
+        await SetLastImage(''); // Clear it first
+        const state = await GetState();
+        // Find the renamed file and set it as last image
+        const renamedFile = state.selectedFiles.find(f => f.name === newFileName);
+        if (renamedFile) {
+          await SetLastImage(renamedFile.path);
+        }
+      }
+      
+      await loadState(); // Reload all state
+      setIsRenameOpen(false);
+      setEditingFile(null);
+      setNewFileName('');
     } catch (error) {
       console.error('Error renaming file:', error);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[50vh]">
-        <div className="text-lg text-muted-foreground">Loading...</div>
-      </div>
-    );
-  }
+  const openRenameDialog = (file: ImageFile) => {
+    setEditingFile(file);
+    setNewFileName(file.name);
+    setIsRenameOpen(true);
+  };
 
-  return (
-    <div className="space-y-8">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Files</h1>
-        <div className="space-x-4">
-          <button
-            onClick={handleFileSelect}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
-          >
-            Select File
-          </button>
-          {selectedFiles.length > 0 && (
-            <button
-              onClick={handleClearAll}
-              className="px-4 py-2 bg-destructive text-destructive-foreground rounded-md hover:bg-destructive/90 transition-colors"
+  const closeRenameDialog = () => {
+    setIsRenameOpen(false);
+    setEditingFile(null);
+    setNewFileName('');
+  };
+
+  const ImageCard = ({ file, showRename = true }: { file: ImageFile, showRename?: boolean }) => (
+    <div key={file.path} className="border rounded-lg p-2">
+      <img
+        src={file.path}
+        alt={file.name}
+        className="w-full h-40 object-cover mb-2 cursor-pointer"
+        onClick={() => handleSetLastImage(file.path)}
+      />
+      <p className="font-semibold mb-2">{file.name}</p>
+      <div className="flex justify-between">
+        <Button 
+          variant="outline" 
+          size="icon" 
+          onClick={() => toggleFavorite(file)}
+          className={localFavorites.has(file.path) ? 'text-red-500 hover:text-red-600' : ''}
+        >
+          <Heart className={`h-4 w-4 ${localFavorites.has(file.path) ? 'fill-red-500' : ''}`} />
+        </Button>
+        {showRename && (
+          <>
+            <Button 
+              variant="outline" 
+              size="icon"
+              onClick={() => openRenameDialog(file)}
             >
-              Clear All
-            </button>
-          )}
-        </div>
-      </div>
-
-      <div className="grid gap-8 md:grid-cols-2">
-        <SelectedItems 
-          files={selectedFiles} 
-          onRemove={handleRemoveFile}
-          onSetAsLastImage={handleSetLastImage}
-          currentLastImagePath={lastImage?.path}
-          onRename={handleRenameFile}
-        />
-        <ChosenFile 
-          lastImage={lastImage} 
-          onClear={handleClearLastImage}
-        />
+              <Edit2 className="h-4 w-4" />
+            </Button>
+            <Dialog open={isRenameOpen && editingFile?.path === file.path} onOpenChange={closeRenameDialog}>
+              <DialogContent onInteractOutside={(e) => e.preventDefault()}>
+                <DialogHeader>
+                  <DialogTitle>Rename Image</DialogTitle>
+                </DialogHeader>
+                <div className="flex gap-2">
+                  <Input 
+                    value={newFileName}
+                    onChange={(e) => setNewFileName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleRename();
+                      }
+                    }}
+                    autoFocus
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    onClick={handleRename}
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </>
+        )}
+        <Button variant="outline" size="icon">
+          <Share2 className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   );
-};
 
-export default Files; 
+  return (
+    <div className="container mx-auto px-4 py-8 space-y-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Image Manager</h1>
+        <Button onClick={handleFileSelect}>
+          <Plus className="h-4 w-4 mr-2" />
+          Add Image
+        </Button>
+      </div>
+
+      <ChosenFile lastImage={lastImage} onClear={handleClearLastImage} />
+
+      <Tabs defaultValue="images" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="images">Images</TabsTrigger>
+          <TabsTrigger value="favorites">Favorites</TabsTrigger>
+          <TabsTrigger value="folders">Folders</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="images" className="mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {selectedFiles.map((file) => (
+              <ImageCard key={file.path} file={file} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="favorites" className="mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {selectedFiles.filter(file => localFavorites.has(file.path)).map((file) => (
+              <ImageCard key={file.path} file={file} showRename={false} />
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="folders" className="mt-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {['Memes', 'Private', 'Public', 'Duplicates'].map((folder) => (
+              <div
+                key={folder}
+                className="p-4 border rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2 cursor-pointer"
+              >
+                <span>{folder}</span>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+} 

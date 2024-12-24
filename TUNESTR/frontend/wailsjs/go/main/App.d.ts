@@ -4,6 +4,8 @@ import {main} from '../models';
 
 export function ClearState():Promise<void>;
 
+export function GetFavorites():Promise<Array<main.FileInfo>>;
+
 export function GetFileInfo(arg1:string):Promise<main.FileInfo>;
 
 export function GetState():Promise<main.AppState>;
@@ -25,3 +27,5 @@ export function SelectFile():Promise<main.FileInfo>;
 export function SetLastImage(arg1:string):Promise<void>;
 
 export function SetTheme(arg1:string):Promise<void>;
+
+export function ToggleFavorite(arg1:string):Promise<void>;

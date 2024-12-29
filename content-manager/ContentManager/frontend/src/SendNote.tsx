@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NostrService, type PublishStatus } from './lib/NostrService';
+import { NostrService } from './lib/NostrService';
 
 const nostrService = new NostrService();
 
@@ -11,9 +11,6 @@ const SendNote = () => {
     const [response, setResponse] = useState('');
     const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected'>('disconnected');
     const [error, setError] = useState<string | null>(null);
-    const [connectedRelays, setConnectedRelays] = useState<string[]>([]);
-    const [isPublishing, setIsPublishing] = useState(false);
-    const [publishStatus, setPublishStatus] = useState<PublishStatus[]>([]);
 
     useEffect(() => {
         // Initialize with default relay
@@ -33,7 +30,6 @@ const SendNote = () => {
 
     const removeRelay = async (url: string) => {
         setSavedRelays(savedRelays.filter(r => r !== url));
-        setConnectedRelays(connectedRelays.filter(r => r !== url));
         if (url === relayURL) {
             setRelayURL('');
             setConnectionStatus('disconnected');
@@ -43,11 +39,8 @@ const SendNote = () => {
     const connectRelay = async (url: string) => {
         try {
             setConnectionStatus('connecting');
-            setError(null);
-            
             const relays = await nostrService.connect([url]);
             if (relays.length > 0) {
-                setConnectedRelays([...connectedRelays, url]);
                 setRelayURL(url);
                 setConnectionStatus('connected');
             }
@@ -58,8 +51,8 @@ const SendNote = () => {
     };
 
     const sendNote = async () => {
-        if (connectedRelays.length === 0) {
-            setError('Please connect to at least one relay first!');
+        if (!relayURL) {
+            setError('Please connect to a relay first!');
             return;
         }
         if (!privateKey) {
@@ -72,32 +65,19 @@ const SendNote = () => {
         }
 
         try {
-            setIsPublishing(true);
-            setError(null);
-            setPublishStatus([]);
-
             // Create and sign the event
-            const event = await nostrService.createAndSignEvent(1, privateKey, message, [
-                ['client', 'NostrContentManager'],
-                ['created_at', Math.floor(Date.now() / 1000).toString()]
-            ]);
+            const event = await nostrService.createAndSignEvent(1, privateKey, message, []);
             
-            // Publish to all connected relays
-            const results = await nostrService.publishToRelays(event, connectedRelays);
-            setPublishStatus(results);
-
-            // Check if at least one relay succeeded
-            const anySuccess = results.some(result => result.success);
-            if (anySuccess) {
+            // Publish the event using the current relay
+            if (nostrService.getCurrentRelay()) {
+                await nostrService.getCurrentRelay().publish(event);
                 setResponse(`Published: ${event.id}`);
                 setMessage(''); // Clear message after successful send
             } else {
-                setError('Failed to publish to any relay');
+                throw new Error('No relay connected');
             }
         } catch (err: any) {
             setError('Error sending note: ' + (err.message || err));
-        } finally {
-            setIsPublishing(false);
         }
     };
 
@@ -127,13 +107,13 @@ const SendNote = () => {
                 </div>
                 <div className="flex flex-col gap-2">
                     {savedRelays.map((url) => (
-                        <div key={url} className={`flex items-center gap-4 p-4 rounded ${connectedRelays.includes(url) ? 'bg-blue-50' : 'bg-gray-50'}`}>
+                        <div key={url} className={`flex items-center gap-4 p-4 rounded ${url === relayURL ? 'bg-blue-50' : 'bg-gray-50'}`}>
                             <span className="flex-1 text-left">{url}</span>
                             <button 
                                 onClick={() => connectRelay(url)}
-                                disabled={connectionStatus === 'connecting' || connectedRelays.includes(url)}
+                                disabled={connectionStatus === 'connecting' || (url === relayURL && connectionStatus === 'connected')}
                             >
-                                {url === relayURL ? connectionStatus : connectedRelays.includes(url) ? 'Connected' : 'Connect'}
+                                {url === relayURL ? connectionStatus : 'Connect'}
                             </button>
                             <button 
                                 onClick={() => removeRelay(url)}
@@ -163,23 +143,12 @@ const SendNote = () => {
                 />
                 <button 
                     onClick={sendNote}
-                    disabled={isPublishing || connectedRelays.length === 0}
+                    disabled={connectionStatus !== 'connected'}
                     className="w-full"
                 >
-                    {isPublishing ? 'Publishing...' : 'Send Note'}
+                    Send Note
                 </button>
             </div>
-            
-            {publishStatus.length > 0 && (
-                <div className="mb-8">
-                    <h3 className="text-xl font-semibold mb-4">Publish Status</h3>
-                    {publishStatus.map((status, index) => (
-                        <div key={index} className={`p-2 mb-2 rounded ${status.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
-                            <span className="font-medium">{status.relay}:</span> {status.success ? 'Success' : status.message}
-                        </div>
-                    ))}
-                </div>
-            )}
             
             {response && (
                 <div className="success-message">

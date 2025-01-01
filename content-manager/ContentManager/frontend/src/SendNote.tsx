@@ -14,6 +14,7 @@ const SendNote = () => {
     const [receivedNotes, setReceivedNotes] = useState<any[]>([]);
     const [subscription, setSubscription] = useState<any>(null);
 
+
     useEffect(() => {
         // Initialize with default relay
         setSavedRelays(['wss://ammetronics.com']);
@@ -23,6 +24,7 @@ const SendNote = () => {
                 nostrService.unsubscribe(subscription);
             }
         };
+
     }, []);
 
     const addRelay = async () => {
@@ -45,6 +47,7 @@ const SendNote = () => {
                 nostrService.unsubscribe(subscription);
                 setSubscription(null);
             }
+
         }
     };
 
@@ -57,6 +60,7 @@ const SendNote = () => {
                 setConnectionStatus('connected');
                 // Start subscribing to notes
                 subscribeToNotes();
+
             }
         } catch (err: any) {
             setConnectionStatus('disconnected');
@@ -86,7 +90,7 @@ const SendNote = () => {
             setError('Error subscribing to notes: ' + (err.message || err));
         }
     };
-
+    
     const sendNote = async () => {
         if (!relayURL) {
             setError('Please connect to a relay first!');
@@ -106,13 +110,14 @@ const SendNote = () => {
             const event = await nostrService.createAndSignEvent(1, privateKey, message, []);
             
             // Publish the event using the current relay
-            const currentRelay = nostrService.getCurrentRelay();
-            if (!currentRelay) {
+
+            if (nostrService.getCurrentRelay()) {
+                await nostrService.getCurrentRelay().publish(event);
+                setResponse(`Published: ${event.id}`);
+                setMessage(''); // Clear message after successful send
+            } else {
                 throw new Error('No relay connected');
             }
-            await currentRelay.publish(event);
-            setResponse(`Published: ${event.id}`);
-            setMessage(''); // Clear message after successful send
         } catch (err: any) {
             setError('Error sending note: ' + (err.message || err));
         }

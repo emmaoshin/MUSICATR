@@ -38,6 +38,7 @@ export namespace main {
 	    ext: string;
 	    size: number;
 	    modTime: string;
+	    favorite: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new FileInfo(source);
@@ -50,6 +51,7 @@ export namespace main {
 	        this.ext = source["ext"];
 	        this.size = source["size"];
 	        this.modTime = source["modTime"];
+	        this.favorite = source["favorite"];
 	    }
 	}
 	export class AppState {

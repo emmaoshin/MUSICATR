@@ -25,6 +25,7 @@ type FileInfo struct {
 	Ext     string    `json:"ext"`
 	Size    int64     `json:"size"`
 	ModTime string    `json:"modTime"`
+	Favorite bool     `json:"favorite"`
 }
 
 type UserPreferences struct {
@@ -448,4 +449,38 @@ func (a *App) GetTheme() (string, error) {
 		return "light", nil // default theme
 	}
 	return state.Preferences.Theme, nil
+}
+
+func (a *App) ToggleFavorite(path string) error {
+	state, err := a.loadState()
+	if err != nil {
+		return err
+	}
+
+	// Find and toggle the favorite status
+	for i, file := range state.SelectedFiles {
+		if file.Path == path {
+			state.SelectedFiles[i].Favorite = !state.SelectedFiles[i].Favorite
+			break
+		}
+	}
+
+	return a.saveState(state)
+}
+
+func (a *App) GetFavorites() ([]FileInfo, error) {
+	state, err := a.loadState()
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter favorites
+	favorites := []FileInfo{}
+	for _, file := range state.SelectedFiles {
+		if file.Favorite {
+			favorites = append(favorites, file)
+		}
+	}
+
+	return favorites, nil
 }

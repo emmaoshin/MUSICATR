@@ -158,4 +158,36 @@ export class NostrService {
 
         return event;
     }
+    /**
+     * Subscribes to events from the current relay based on the provided filters.
+     * @param filters Array of filters to apply to the subscription.
+     * @returns A subscription object that emits events.
+     */
+    async subscribeToEvents(filters: { kinds?: number[], limit?: number, since?: number, until?: number, authors?: string[] }[]) {
+        if (!this.currentRelay) {
+            throw new Error('No relay connected');
+        }
+
+        const sub = this.currentRelay.sub(filters);
+
+        sub.on('event', (event: Event) => {
+            console.log('Received event:', event);
+        });
+
+        sub.on('eose', () => {
+            console.log('End of stored events');
+        });
+
+        return sub;
+    }
+
+    /**
+     * Unsubscribes from a subscription.
+     * @param sub The subscription to unsubscribe from.
+     */
+    unsubscribe(sub: any) {
+        if (sub) {
+            sub.unsub();
+        }
+    }
 }

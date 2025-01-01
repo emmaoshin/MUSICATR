@@ -4,10 +4,12 @@ go 1.23.1
 
 toolchain go1.23.4
 
+
 require (
 	github.com/nbd-wtf/go-nostr v0.45.0
 	github.com/wailsapp/wails/v2 v2.9.2
 )
+
 
 require (
 	github.com/bep/debounce v1.2.1 // indirect
@@ -54,5 +56,3 @@ require (
 	golang.org/x/sys v0.26.0 // indirect
 	golang.org/x/text v0.19.0 // indirect
 )
-
-// replace github.com/wailsapp/wails/v2 v2.9.2 => C:\Users\emman\go\pkg\mod

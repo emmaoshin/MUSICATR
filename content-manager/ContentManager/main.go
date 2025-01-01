@@ -86,17 +86,75 @@ func (r *RelayHandler) ConnectRelay(url string) error {
 	return nil
 }
 
+func (r *RelayHandler) SubscribeToRelay(filters []map[string]interface{}) ([]nostr.Event, error) {
+	if r.relay == nil {
+		return nil, fmt.Errorf("no relay connected")
+	}
+
+	// Convert the filters from map to nostr.Filter
+	var nostrFilters []nostr.Filter
+	for _, f := range filters {
+		filter := nostr.Filter{}
+		if kinds, ok := f["kinds"].([]interface{}); ok {
+			for _, k := range kinds {
+				if kind, ok := k.(float64); ok {
+					filter.Kinds = append(filter.Kinds, int(kind))
+				}
+			}
+		}
+		if limit, ok := f["limit"].(float64); ok {
+			filter.Limit = int(limit)
+		}
+		if since, ok := f["since"].(float64); ok {
+			ts := nostr.Timestamp(since)
+			filter.Since = &ts
+		}
+		if until, ok := f["until"].(float64); ok {
+			ts := nostr.Timestamp(until)
+			filter.Until = &ts
+		}
+		if authors, ok := f["authors"].([]interface{}); ok {
+			for _, a := range authors {
+				if author, ok := a.(string); ok {
+					filter.Authors = append(filter.Authors, author)
+				}
+			}
+		}
+		nostrFilters = append(nostrFilters, filter)
+	}
+
+	// Create subscription
+	sub, err := r.relay.Subscribe(context.Background(), nostrFilters)
+	if err != nil {
+		return nil, fmt.Errorf("error subscribing to relay: %v", err)
+	}
+
+	// Collect events for 2 seconds
+	events := make([]nostr.Event, 0)
+	timeout := time.After(2 * time.Second)
+
+	for {
+		select {
+		case ev := <-sub.Events:
+			events = append(events, *ev)
+		case <-timeout:
+			sub.Unsub()
+			return events, nil
+		}
+	}
+}
+
 func (r *RelayHandler) SendNote(privateKey, message string) (string, error) {
 	// Clean up the private key
 	privateKey = strings.TrimSpace(privateKey)
 
 	// Try to decode as bech32 if it starts with nsec
 	if strings.HasPrefix(privateKey, "nsec") {
-		var err error
-		privateKey, err = nostr.SecretKeyFromBech32(privateKey)
+		decoded, err := nostr.GetPublicKey(privateKey)
 		if err != nil {
 			return "", fmt.Errorf("invalid nsec format: %v", err)
 		}
+		privateKey = decoded
 	}
 
 	// Generate public key from private key

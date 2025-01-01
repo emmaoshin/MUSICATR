@@ -6,6 +6,10 @@ export function ClearState() {
   return window['go']['main']['App']['ClearState']();
 }
 
+export function GetFavorites() {
+  return window['go']['main']['App']['GetFavorites']();
+}
+
 export function GetFileInfo(arg1) {
   return window['go']['main']['App']['GetFileInfo'](arg1);
 }
@@ -48,4 +52,8 @@ export function SetLastImage(arg1) {
 
 export function SetTheme(arg1) {
   return window['go']['main']['App']['SetTheme'](arg1);
+}
+
+export function ToggleFavorite(arg1) {
+  return window['go']['main']['App']['ToggleFavorite'](arg1);
 }

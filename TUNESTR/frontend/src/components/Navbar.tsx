@@ -9,6 +9,13 @@ const Navbar: React.FC = () => {
     return location.pathname === path ? 'bg-primary/10 text-primary' : '';
   };
 
+  const navigation = [
+    { name: 'Home', href: '/' },
+    { name: 'Images', href: '/files' },
+    { name: 'Player', href: '/player' },
+    { name: 'Settings', href: '/settings' },
+  ]
+
   return (
     <nav className="border-b bg-background">
       <div className="container mx-auto flex h-16 items-center px-4">
@@ -24,7 +31,7 @@ const Navbar: React.FC = () => {
             to="/files" 
             className={`px-4 py-2 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors ${isActive('/files')}`}
           >
-            Files
+            Images
           </Link>
           <Link 
             to="/player" 

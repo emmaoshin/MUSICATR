@@ -158,7 +158,6 @@ export class NostrService {
 
         return event;
     }
-
     /**
      * Subscribes to events from the current relay based on the provided filters.
      * @param filters Array of filters to apply to the subscription.

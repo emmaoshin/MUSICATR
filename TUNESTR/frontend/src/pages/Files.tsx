@@ -1,11 +1,23 @@
-import { useEffect, useState } from 'react';
-import { SelectFile, GetState, SetLastImage, RemoveFile, RenameFile } from '../../wailsjs/go/main/App';
-import { LastImageState } from '@/types';
-import ChosenFile from '@/components/LastImage';
+import { useEffect, useState } from "react";
+import {
+  SelectFile,
+  GetState,
+  SetLastImage,
+  RemoveFile,
+  RenameFile,
+} from "../../wailsjs/go/main/App";
+import { LastImageState } from "@/types";
+import ChosenFile from "@/components/LastImage";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Heart, Share2, Edit2, Plus, Check } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Heart, Share2, Edit2, Plus, Check } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
 interface ImageFile {
@@ -24,7 +36,7 @@ export default function Files() {
   const [localFavorites, setLocalFavorites] = useState<Set<string>>(new Set());
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [editingFile, setEditingFile] = useState<ImageFile | null>(null);
-  const [newFileName, setNewFileName] = useState('');
+  const [newFileName, setNewFileName] = useState("");
 
   useEffect(() => {
     loadState();
@@ -35,11 +47,13 @@ export default function Files() {
       const state = await GetState();
       setSelectedFiles(state.selectedFiles || []);
       setLastImage(state.lastImage || null);
-      const favSet = new Set(state.selectedFiles?.filter(f => f.favorite).map(f => f.path));
+      const favSet = new Set(
+        state.selectedFiles?.filter((f) => f.favorite).map((f) => f.path)
+      );
       setLocalFavorites(favSet);
-      setFavorites(state.selectedFiles?.filter(file => file.favorite) || []);
+      setFavorites(state.selectedFiles?.filter((file) => file.favorite) || []);
     } catch (error) {
-      console.error('Error loading state:', error);
+      console.error("Error loading state:", error);
     }
   };
 
@@ -50,7 +64,7 @@ export default function Files() {
         await loadState();
       }
     } catch (error) {
-      console.error('Error selecting file:', error);
+      console.error("Error selecting file:", error);
     }
   };
 
@@ -62,7 +76,7 @@ export default function Files() {
         setLastImage(state.lastImage);
       }
     } catch (error) {
-      console.error('Error setting last image:', error);
+      console.error("Error setting last image:", error);
     }
   };
 
@@ -71,21 +85,21 @@ export default function Files() {
       await RemoveFile(path);
       await loadState();
     } catch (error) {
-      console.error('Error removing file:', error);
+      console.error("Error removing file:", error);
     }
   };
 
   const handleClearLastImage = async () => {
     try {
-      await SetLastImage('');
+      await SetLastImage("");
       await loadState();
     } catch (error) {
-      console.error('Error clearing last image:', error);
+      console.error("Error clearing last image:", error);
     }
   };
 
   const toggleFavorite = (file: ImageFile) => {
-    setLocalFavorites(prev => {
+    setLocalFavorites((prev) => {
       const newFavorites = new Set(prev);
       if (newFavorites.has(file.path)) {
         newFavorites.delete(file.path);
@@ -101,24 +115,26 @@ export default function Files() {
       if (!editingFile) return;
 
       await RenameFile(editingFile.path, newFileName);
-      
+
       // If this was the last image, refresh it
       if (lastImage && lastImage.name === editingFile.name) {
-        await SetLastImage(''); // Clear it first
+        await SetLastImage(""); // Clear it first
         const state = await GetState();
         // Find the renamed file and set it as last image
-        const renamedFile = state.selectedFiles.find(f => f.name === newFileName);
+        const renamedFile = state.selectedFiles.find(
+          (f) => f.name === newFileName
+        );
         if (renamedFile) {
           await SetLastImage(renamedFile.path);
         }
       }
-      
+
       await loadState(); // Reload all state
       setIsRenameOpen(false);
       setEditingFile(null);
-      setNewFileName('');
+      setNewFileName("");
     } catch (error) {
-      console.error('Error renaming file:', error);
+      console.error("Error renaming file:", error);
     }
   };
 
@@ -131,10 +147,16 @@ export default function Files() {
   const closeRenameDialog = () => {
     setIsRenameOpen(false);
     setEditingFile(null);
-    setNewFileName('');
+    setNewFileName("");
   };
 
-  const ImageCard = ({ file, showRename = true }: { file: ImageFile, showRename?: boolean }) => (
+  const ImageCard = ({
+    file,
+    showRename = true,
+  }: {
+    file: ImageFile;
+    showRename?: boolean;
+  }) => (
     <div key={file.path} className="border rounded-lg p-2">
       <img
         src={file.path}
@@ -144,45 +166,52 @@ export default function Files() {
       />
       <p className="font-semibold mb-2">{file.name}</p>
       <div className="flex justify-between">
-        <Button 
-          variant="outline" 
-          size="icon" 
+        <Button
+          variant="outline"
+          size="icon"
           onClick={() => toggleFavorite(file)}
-          className={localFavorites.has(file.path) ? 'text-red-500 hover:text-red-600' : ''}
+          className={
+            localFavorites.has(file.path)
+              ? "text-red-500 hover:text-red-600"
+              : ""
+          }
         >
-          <Heart className={`h-4 w-4 ${localFavorites.has(file.path) ? 'fill-red-500' : ''}`} />
+          <Heart
+            className={`h-4 w-4 ${
+              localFavorites.has(file.path) ? "fill-red-500" : ""
+            }`}
+          />
         </Button>
         {showRename && (
           <>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="icon"
               onClick={() => openRenameDialog(file)}
             >
               <Edit2 className="h-4 w-4" />
             </Button>
-            <Dialog open={isRenameOpen && editingFile?.path === file.path} onOpenChange={closeRenameDialog}>
+            <Dialog
+              open={isRenameOpen && editingFile?.path === file.path}
+              onOpenChange={closeRenameDialog}
+            >
               <DialogContent onInteractOutside={(e) => e.preventDefault()}>
                 <DialogHeader>
                   <DialogTitle>Rename Image</DialogTitle>
                 </DialogHeader>
                 <div className="flex gap-2">
-                  <Input 
+                  <Input
                     value={newFileName}
                     onChange={(e) => setNewFileName(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
+                      if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         handleRename();
                       }
                     }}
                     autoFocus
                   />
-                  <Button 
-                    variant="outline" 
-                    size="icon"
-                    onClick={handleRename}
-                  >
+                  <Button variant="outline" size="icon" onClick={handleRename}>
                     <Check className="h-4 w-4" />
                   </Button>
                 </div>
@@ -226,15 +255,17 @@ export default function Files() {
 
         <TabsContent value="favorites" className="mt-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {selectedFiles.filter(file => localFavorites.has(file.path)).map((file) => (
-              <ImageCard key={file.path} file={file} showRename={false} />
-            ))}
+            {selectedFiles
+              .filter((file) => localFavorites.has(file.path))
+              .map((file) => (
+                <ImageCard key={file.path} file={file} showRename={false} />
+              ))}
           </div>
         </TabsContent>
 
         <TabsContent value="folders" className="mt-6">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {['Memes', 'Private', 'Public', 'Duplicates'].map((folder) => (
+            {["Memes", "Private", "Public", "Duplicates"].map((folder) => (
               <div
                 key={folder}
                 className="p-4 border rounded-lg hover:bg-gray-100 transition-colors flex items-center space-x-2 cursor-pointer"
@@ -247,4 +278,4 @@ export default function Files() {
       </Tabs>
     </div>
   );
-} 
+}

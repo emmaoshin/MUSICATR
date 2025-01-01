@@ -29,3 +29,7 @@ export function SaveRelays() {
 export function SendNote(arg1, arg2) {
   return window['go']['main']['RelayHandler']['SendNote'](arg1, arg2);
 }
+
+export function SubscribeToRelay(arg1) {
+  return window['go']['main']['RelayHandler']['SubscribeToRelay'](arg1);
+}

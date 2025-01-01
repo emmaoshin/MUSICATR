@@ -69,13 +69,13 @@ const SendNote = () => {
             const event = await nostrService.createAndSignEvent(1, privateKey, message, []);
             
             // Publish the event using the current relay
-            if (nostrService.getCurrentRelay()) {
-                await nostrService.getCurrentRelay().publish(event);
-                setResponse(`Published: ${event.id}`);
-                setMessage(''); // Clear message after successful send
-            } else {
+            const currentRelay = nostrService.getCurrentRelay();
+            if (!currentRelay) {
                 throw new Error('No relay connected');
             }
+            await currentRelay.publish(event);
+            setResponse(`Published: ${event.id}`);
+            setMessage(''); // Clear message after successful send
         } catch (err: any) {
             setError('Error sending note: ' + (err.message || err));
         }

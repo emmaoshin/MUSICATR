@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/nbd-wtf/go-nostr"
-	"github.com/wailsapp/wails/v2"
+	wails "github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 )
@@ -92,11 +92,11 @@ func (r *RelayHandler) SendNote(privateKey, message string) (string, error) {
 
 	// Try to decode as bech32 if it starts with nsec
 	if strings.HasPrefix(privateKey, "nsec") {
-		var err error
-		privateKey, err = nostr.SecretKeyFromBech32(privateKey)
+		decoded, err := nostr.GetPublicKey(privateKey)
 		if err != nil {
 			return "", fmt.Errorf("invalid nsec format: %v", err)
 		}
+		privateKey = decoded
 	}
 
 	// Generate public key from private key
